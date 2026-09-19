@@ -7,3 +7,6 @@
 - `cloud/articles/`：网页上传的 HTML 文章
 
 上传页不会把 GitHub Token 写入仓库。勾选“记住 Token”时，只保存在当前浏览器 localStorage。
+
+
+<!-- Pages trigger: 2026-09-19 -->
