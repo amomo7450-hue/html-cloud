@@ -119,12 +119,32 @@ async function refreshList(){
       const el=document.createElement('div');el.className='item';
       const left=document.createElement('div');left.innerHTML='<div class="title">'+esc(a.title||'未命名文章')+'</div><div class="meta">'+esc((a.updatedAt||'').replace('T',' '))+' · '+fmtBytes(a.size||0)+'</div>';
       const actions=document.createElement('div');actions.className='row';
-      const open=document.createElement('button');open.textContent='预览';open.onclick=()=>window.open(PAGES+a.path,'_blank','noopener');
+      const open=document.createElement('button');open.textContent='预览';open.onclick=()=>previewArticle(a);
       const del=document.createElement('button');del.textContent='删除';del.className='danger';del.onclick=()=>removeArticle(a);
       actions.append(open,del);el.append(left,actions);$('list').append(el);
     }
   }catch(e){$('list').innerHTML='<div class="small">加载失败：'+esc(e.message)+'</div>';throw e;}
 }
+async function previewArticle(a){
+  const win=window.open('about:blank','_blank');
+  try{
+    const file=await api(a.path,{query:'?ref='+BRANCH+'&t='+Date.now()});
+    const html=base64ToText(file.content);
+    const blob=new Blob([html],{type:'text/html;charset=utf-8'});
+    const url=URL.createObjectURL(blob);
+    if(win){
+      win.location.href=url;
+      setTimeout(()=>URL.revokeObjectURL(url),60000);
+    }else{
+      alert('浏览器阻止了新窗口，请允许弹窗后再试');
+      URL.revokeObjectURL(url);
+    }
+  }catch(e){
+    if(win) win.close();
+    alert('预览失败：'+e.message);
+  }
+}
+
 async function removeArticle(a){
   if(!confirm('删除《'+a.title+'》？'))return;
   try{
@@ -152,7 +172,7 @@ $('upload').onclick=async()=>{
     }
     idx.data.updatedAt=new Date().toISOString();
     await putFile('cloud/index.json',JSON.stringify(idx.data,null,2),idx.sha);
-    $('uploadStatus').textContent='上传完成：'+done+' 篇。稍等 GitHub Pages 发布后，APP 即可读取。';
+    $('uploadStatus').textContent='上传完成：'+done+' 篇。APP 可直接读取；点击“预览”也无需等待 Pages 发布。';
     selectedFiles=[];$('files').value='';$('selected').textContent='尚未选择文件';await refreshList();
   }catch(e){$('uploadStatus').textContent='上传失败：'+e.message;}finally{$('upload').disabled=false;}
 };
